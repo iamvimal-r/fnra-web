@@ -5,6 +5,9 @@ import ManageNews from './admin/ManageNews'
 import ManageGallery from './admin/ManageGallery'
 import ManageCommittee from './admin/ManageCommittee'
 import ManageContacts from './admin/ManageContacts'
+import ManageExpenses from './admin/ManageExpenses'
+import ManageIncomes from './admin/ManageIncomes'
+import ManageReports from './admin/ManageReports'
 
 const NAV = [
   { to: '/admin',           icon: '📊', label: 'Dashboard',  end: true },
@@ -13,6 +16,9 @@ const NAV = [
   { to: '/admin/news',      icon: '📰', label: 'News' },
   { to: '/admin/gallery',   icon: '🎨', label: 'Gallery' },
   { to: '/admin/contacts',  icon: '📞', label: 'Contacts' },
+  { to: '/admin/expenses',  icon: '💸', label: 'Expenses' },
+  { to: '/admin/incomes',   icon: '💰', label: 'Other Incomes' },
+  { to: '/admin/reports',   icon: '📁', label: 'Reports' },
 ]
 
 export default function AdminLayout({ token, admin, onLogout }) {
@@ -82,6 +88,9 @@ export default function AdminLayout({ token, admin, onLogout }) {
           <Route path="news"      element={<ManageNews     token={token} />} />
           <Route path="gallery"   element={<ManageGallery  token={token} />} />
           <Route path="contacts"  element={<ManageContacts token={token} />} />
+          <Route path="expenses"  element={<ManageExpenses token={token} />} />
+          <Route path="incomes"   element={<ManageIncomes  token={token} />} />
+          <Route path="reports"   element={<ManageReports  token={token} />} />
         </Routes>
       </main>
     </div>

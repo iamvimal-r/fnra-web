@@ -1,6 +1,32 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { slidesApi, newsApi, galleryApi, publicContactsApi, committeeApi, resolveUrl } from '../api'
+
+// ── Animation Wrapper ─────────────────────────────────────────────────────────
+function Reveal({ children, className = '', type = 'reveal', delay = 0 }) {
+  const [isVisible, setIsVisible] = useState(false)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true)
+          observer.unobserve(entry.target)
+        }
+      },
+      { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
+    )
+    if (ref.current) observer.observe(ref.current)
+    return () => observer.disconnect()
+  }, [])
+
+  return (
+    <div ref={ref} className={`${type} ${isVisible ? 'active' : ''} ${delay ? 'delay-'+delay : ''} ${className}`}>
+      {children}
+    </div>
+  )
+}
 
 // ── Navbar ────────────────────────────────────────────────────────────────────
 function Navbar() {
@@ -103,17 +129,25 @@ function HeroSlider({ slides }) {
           <div className="hero-overlay" />
           <div className="container">
             <div className="hero-content">
-              <div className="hero-tag">🦅 Falcon Nagar Residence Association</div>
-              <h1 className="hero-title">
-                {slide.title.split(' ').map((w, wi) =>
-                  wi === 0 ? <span key={wi}>{w} </span> : w + ' '
-                )}
-              </h1>
-              <p className="hero-sub">{slide.subtitle}</p>
-              <div className="hero-actions">
-                <a href="#news" className="btn btn-primary">📰 Latest News</a>
-                <a href="#about" className="btn btn-outline">About Us</a>
-              </div>
+              <Reveal type="reveal" delay={100}>
+                <div className="hero-tag">🦅 Falcon Nagar Residence Association</div>
+              </Reveal>
+              <Reveal type="reveal" delay={200}>
+                <h1 className="hero-title">
+                  {slide.title.split(' ').map((w, wi) =>
+                    wi === 0 ? <span key={wi}>{w} </span> : w + ' '
+                  )}
+                </h1>
+              </Reveal>
+              <Reveal type="reveal" delay={300}>
+                <p className="hero-sub">{slide.subtitle}</p>
+              </Reveal>
+              <Reveal type="reveal" delay={400}>
+                <div className="hero-actions">
+                  <a href="#news" className="btn btn-primary">📰 Latest News</a>
+                  <a href="#about" className="btn btn-outline">About Us</a>
+                </div>
+              </Reveal>
             </div>
           </div>
         </div>
@@ -139,9 +173,9 @@ function NewsSection({ news }) {
     <section id="news" className="section">
       <div className="container">
         <div className="section-header">
-          <div className="section-label">Latest Updates</div>
-          <h2 className="section-title">News & Notices</h2>
-          <p className="section-sub">Stay informed about the latest happenings in Falcon Nagar.</p>
+          <Reveal type="reveal-scale"><div className="section-label">Latest Updates</div></Reveal>
+          <Reveal delay={100}><h2 className="section-title">News & Notices</h2></Reveal>
+          <Reveal delay={200}><p className="section-sub">Stay informed about the latest happenings in Falcon Nagar.</p></Reveal>
         </div>
         {news.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--gray)' }}>
@@ -150,20 +184,22 @@ function NewsSection({ news }) {
           </div>
         ) : (
           <div className="news-grid">
-            {news.filter(n => n.published).map(item => (
-              <div key={item.id} className="news-card">
-                {item.image_url ? (
-                  <img src={resolveUrl(item.image_url)} alt={item.title} className="news-card-img" />
-                ) : (
-                  <div className="news-card-img-placeholder">{NEWS_ICONS[item.category] || '📢'}</div>
-                )}
-                <div className="news-card-body">
-                  <span className={`badge badge-${item.category}`}>{item.category}</span>
-                  <div className="news-card-title">{item.title}</div>
-                  <div className="news-card-excerpt">{item.content.slice(0, 120)}{item.content.length > 120 ? '…' : ''}</div>
-                  <div className="news-card-date">{item.date ? new Date(item.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : new Date(item.created_at).toLocaleDateString('en-IN')}</div>
+            {news.filter(n => n.published).map((item, i) => (
+              <Reveal key={item.id} delay={(i % 3) * 100}>
+                <div className="news-card">
+                  {item.image_url ? (
+                    <img src={resolveUrl(item.image_url)} alt={item.title} className="news-card-img" />
+                  ) : (
+                    <div className="news-card-img-placeholder">{NEWS_ICONS[item.category] || '📢'}</div>
+                  )}
+                  <div className="news-card-body">
+                    <span className={`badge badge-${item.category}`}>{item.category}</span>
+                    <div className="news-card-title">{item.title}</div>
+                    <div className="news-card-excerpt">{item.content.slice(0, 120)}{item.content.length > 120 ? '…' : ''}</div>
+                    <div className="news-card-date">{item.date ? new Date(item.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : new Date(item.created_at).toLocaleDateString('en-IN')}</div>
+                  </div>
                 </div>
-              </div>
+              </Reveal>
             ))}
           </div>
         )}
@@ -179,9 +215,9 @@ function GallerySection({ gallery }) {
     <section id="gallery" className="section section-alt">
       <div className="container">
         <div className="section-header">
-          <div className="section-label">Our Community</div>
-          <h2 className="section-title">Photo Gallery</h2>
-          <p className="section-sub">Moments from Falcon Nagar — events, facilities, and community life.</p>
+          <Reveal type="reveal-scale"><div className="section-label">Our Community</div></Reveal>
+          <Reveal delay={100}><h2 className="section-title">Photo Gallery</h2></Reveal>
+          <Reveal delay={200}><p className="section-sub">Moments from Falcon Nagar — events, facilities, and community life.</p></Reveal>
         </div>
         {gallery.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--gray)' }}>
@@ -190,13 +226,15 @@ function GallerySection({ gallery }) {
           </div>
         ) : (
           <div className="gallery-grid">
-            {gallery.map(item => (
-              <div key={item.id} className="gallery-item" onClick={() => setLightbox(item)}>
-                <img src={resolveUrl(item.image_url)} alt={item.title} loading="lazy" onError={e => { e.target.style.display='none'; e.target.parentElement.style.background='#1a2d5a' }} />
-                <div className="gallery-overlay">
-                  <span className="gallery-overlay-text">🔍 {item.title}</span>
+            {gallery.map((item, i) => (
+              <Reveal key={item.id} type="reveal-scale" delay={(i % 4) * 100}>
+                <div className="gallery-item" onClick={() => setLightbox(item)}>
+                  <img src={resolveUrl(item.image_url)} alt={item.title} loading="lazy" onError={e => { e.target.style.display='none'; e.target.parentElement.style.background='#1a2d5a' }} />
+                  <div className="gallery-overlay">
+                    <span className="gallery-overlay-text">🔍 {item.title}</span>
+                  </div>
                 </div>
-              </div>
+              </Reveal>
             ))}
           </div>
         )}
@@ -311,30 +349,42 @@ function CommitteeSection({ members }) {
       <div className="container">
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: 56 }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(212,160,23,0.1)', border: '1px solid rgba(212,160,23,0.3)', color: '#d4a017', padding: '6px 16px', borderRadius: 20, fontSize: 12, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 16 }}>
-            🌟 FNRA Leadership
-          </div>
-          <h2 style={{ fontSize: 'clamp(28px,4vw,42px)', fontWeight: 900, marginBottom: 12 }}>Executive Committee</h2>
-          <p style={{ color: '#9ca3af', fontSize: 16, maxWidth: 480, margin: '0 auto' }}>The elected representatives serving the residents of Falcon Nagar.</p>
+          <Reveal type="reveal-scale">
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(212,160,23,0.1)', border: '1px solid rgba(212,160,23,0.3)', color: '#d4a017', padding: '6px 16px', borderRadius: 20, fontSize: 12, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 16 }}>
+              🌟 FNRA Leadership
+            </div>
+          </Reveal>
+          <Reveal delay={100}><h2 style={{ fontSize: 'clamp(28px,4vw,42px)', fontWeight: 900, marginBottom: 12 }}>Executive Committee</h2></Reveal>
+          <Reveal delay={200}><p style={{ color: '#9ca3af', fontSize: 16, maxWidth: 480, margin: '0 auto' }}>The elected representatives serving the residents of Falcon Nagar.</p></Reveal>
         </div>
 
         {/* Featured row — President / VP / Secretary */}
         {featured.length > 0 && (
           <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(featured.length, 3)}, 1fr)`, gap: 24, marginBottom: 32, maxWidth: 900, margin: '0 auto 32px' }}>
-            {featured.map(m => <MemberCard key={m.id} member={m} featured />)}
+            {featured.map((m, i) => (
+              <Reveal key={m.id} delay={i * 100}>
+                <MemberCard member={m} featured />
+              </Reveal>
+            ))}
           </div>
         )}
 
         {/* Divider */}
         {executive.length > 0 && (
           <>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 28 }}>
-              <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
-              <span style={{ color: '#6b7280', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 2 }}>Executive Members</span>
-              <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
-            </div>
+            <Reveal type="reveal-scale">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 28 }}>
+                <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
+                <span style={{ color: '#6b7280', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 2 }}>Executive Members</span>
+                <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
+              </div>
+            </Reveal>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 20 }}>
-              {executive.map(m => <MemberCard key={m.id} member={m} featured={false} />)}
+              {executive.map((m, i) => (
+                <Reveal key={m.id} delay={(i % 4) * 100}>
+                  <MemberCard member={m} featured={false} />
+                </Reveal>
+              ))}
             </div>
           </>
         )}
@@ -422,11 +472,13 @@ function EmergencySection({ contacts }) {
     <section id="emergency" style={{ padding: '80px 0', background: 'linear-gradient(180deg, rgba(239,68,68,0.04) 0%, transparent 100%)' }}>
       <div className="container">
         <div style={{ textAlign: 'center', marginBottom: 48 }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', color: '#fca5a5', padding: '6px 16px', borderRadius: 20, fontSize: 12, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 16 }}>
-            🚨 Important Numbers
-          </div>
-          <h2 style={{ fontSize: 'clamp(28px,4vw,40px)', fontWeight: 800, marginBottom: 12 }}>Emergency &amp; Service Contacts</h2>
-          <p style={{ color: '#9ca3af', fontSize: 16, maxWidth: 520, margin: '0 auto' }}>One-tap calling and WhatsApp for all important contacts in Falcon Nagar.</p>
+          <Reveal type="reveal-scale">
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', color: '#fca5a5', padding: '6px 16px', borderRadius: 20, fontSize: 12, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 16 }}>
+              🚨 Important Numbers
+            </div>
+          </Reveal>
+          <Reveal delay={100}><h2 style={{ fontSize: 'clamp(28px,4vw,40px)', fontWeight: 800, marginBottom: 12 }}>Emergency &amp; Service Contacts</h2></Reveal>
+          <Reveal delay={200}><p style={{ color: '#9ca3af', fontSize: 16, maxWidth: 520, margin: '0 auto' }}>One-tap calling and WhatsApp for all important contacts in Falcon Nagar.</p></Reveal>
         </div>
 
         {contacts.length === 0 ? (
@@ -460,7 +512,11 @@ function EmergencySection({ contacts }) {
                   <div style={{ flex: 1, height: 1, background: 'rgba(239,68,68,0.25)' }} />
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
-                  {emergency.map(c => <ContactCard key={c.id} contact={c} />)}
+                  {emergency.map((c, i) => (
+                    <Reveal key={c.id} delay={(i % 3) * 100}>
+                      <ContactCard contact={c} />
+                    </Reveal>
+                  ))}
                 </div>
               </div>
             )}
@@ -476,7 +532,11 @@ function EmergencySection({ contacts }) {
                   </div>
                 )}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
-                  {others.map(c => <ContactCard key={c.id} contact={c} />)}
+                  {others.map((c, i) => (
+                    <Reveal key={c.id} delay={(i % 3) * 100}>
+                      <ContactCard contact={c} />
+                    </Reveal>
+                  ))}
                 </div>
               </div>
             )}
@@ -484,24 +544,26 @@ function EmergencySection({ contacts }) {
         )}
 
         {/* Helpline strip */}
-        <div style={{ marginTop: 48, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 16, padding: '24px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
-          <div>
-            <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 4 }}>🚑 National Emergency Numbers</div>
-            <div style={{ color: '#9ca3af', fontSize: 13 }}>Available 24/7 across India</div>
+        <Reveal type="reveal-scale">
+          <div style={{ marginTop: 48, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 16, padding: '24px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: 16, marginBottom: 4 }}>🚑 National Emergency Numbers</div>
+              <div style={{ color: '#9ca3af', fontSize: 13 }}>Available 24/7 across India</div>
+            </div>
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              {[['🚑 Ambulance', '102'], ['🚒 Fire', '101'], ['👮 Police', '100'], ['🆘 Emergency', '112']].map(([label, num]) => (
+                <a key={num} href={`tel:${num}`}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 12, padding: '10px 16px', color: '#fff', textDecoration: 'none', minWidth: 80, transition: 'all 0.2s' }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.35)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'rgba(239,68,68,0.15)'}
+                >
+                  <span style={{ fontSize: 13 }}>{label}</span>
+                  <span style={{ fontSize: 22, fontWeight: 900, color: '#fca5a5', marginTop: 4 }}>{num}</span>
+                </a>
+              ))}
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            {[['🚑 Ambulance', '102'], ['🚒 Fire', '101'], ['👮 Police', '100'], ['🆘 Emergency', '112']].map(([label, num]) => (
-              <a key={num} href={`tel:${num}`}
-                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 12, padding: '10px 16px', color: '#fff', textDecoration: 'none', minWidth: 80, transition: 'all 0.2s' }}
-                onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.35)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'rgba(239,68,68,0.15)'}
-              >
-                <span style={{ fontSize: 13 }}>{label}</span>
-                <span style={{ fontSize: 22, fontWeight: 900, color: '#fca5a5', marginTop: 4 }}>{num}</span>
-              </a>
-            ))}
-          </div>
-        </div>
+        </Reveal>
       </div>
     </section>
   )
@@ -512,29 +574,33 @@ function AboutSection() {
     <section id="about" className="section">
       <div className="container">
         <div className="about-strip">
-          <div>
-            <div className="section-label">Est. 2015</div>
-            <h2 className="section-title">About FNRA</h2>
-            <p style={{ color: 'var(--gray)', lineHeight: 1.8, marginBottom: 16 }}>
-              Falcon Nagar Residence Association (FNRA) is the official registered body managing the Falcon Nagar residential community in Thiruvananthapuram.
-              Registered under TVM/TC/1496/2015, we work to ensure clean, safe, and harmonious living for all residents.
-            </p>
-            <p style={{ color: 'var(--gray)', lineHeight: 1.8 }}>
-              Our elected committee manages maintenance, security, community events, and dispute resolution with full transparency.
-            </p>
-            <div className="stat-row">
-              <div className="stat-item"><div className="stat-val">100+</div><div className="stat-lab">Houses</div></div>
-              <div className="stat-item"><div className="stat-val">10+</div><div className="stat-lab">Years</div></div>
-              <div className="stat-item"><div className="stat-val">500+</div><div className="stat-lab">Residents</div></div>
+          <Reveal type="reveal-left">
+            <div>
+              <div className="section-label">Est. 2015</div>
+              <h2 className="section-title">About FNRA</h2>
+              <p style={{ color: 'var(--gray)', lineHeight: 1.8, marginBottom: 16 }}>
+                Falcon Nagar Residence Association (FNRA) is the official registered body managing the Falcon Nagar residential community in Thiruvananthapuram.
+                Registered under TVM/TC/1496/2015, we work to ensure clean, safe, and harmonious living for all residents.
+              </p>
+              <p style={{ color: 'var(--gray)', lineHeight: 1.8 }}>
+                Our elected committee manages maintenance, security, community events, and dispute resolution with full transparency.
+              </p>
+              <div className="stat-row">
+                <div className="stat-item"><div className="stat-val">100+</div><div className="stat-lab">Houses</div></div>
+                <div className="stat-item"><div className="stat-val">10+</div><div className="stat-lab">Years</div></div>
+                <div className="stat-item"><div className="stat-val">500+</div><div className="stat-lab">Residents</div></div>
+              </div>
             </div>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'center' }}>
-            <div style={{ textAlign: 'center' }}>
-              <img src="/icon.png" alt="FNRA Logo" className="about-logo" onError={e => e.target.style.display='none'} />
-              <p style={{ color: 'var(--gold)', fontWeight: 700, marginTop: 16, letterSpacing: 2 }}>FALCON NAGAR</p>
-              <p style={{ color: 'var(--gray)', fontSize: 12, marginTop: 4 }}>TVM/TC/1496/2015</p>
+          </Reveal>
+          <Reveal type="reveal-right" delay={200}>
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <div style={{ textAlign: 'center' }}>
+                <img src="/icon.png" alt="FNRA Logo" className="about-logo" onError={e => e.target.style.display='none'} />
+                <p style={{ color: 'var(--gold)', fontWeight: 700, marginTop: 16, letterSpacing: 2 }}>FALCON NAGAR</p>
+                <p style={{ color: 'var(--gray)', fontSize: 12, marginTop: 4 }}>TVM/TC/1496/2015</p>
+              </div>
             </div>
-          </div>
+          </Reveal>
         </div>
       </div>
     </section>

@@ -1,4 +1,4 @@
-const API = import.meta.env.VITE_API_URL || 'http://192.168.8.32:8000'
+export const API = import.meta.env.VITE_API_URL || 'http://192.168.8.32:8000'
 
 export function resolveUrl(url) {
   if (!url) return ''
@@ -81,3 +81,24 @@ export const committeeApi = {
 export const authApi = {
   login: (email, password) => post('/auth/login', { email, password }),
 }
+
+export const expensesApi = {
+  list:       (token)                => get('/expenses', token),
+  create:     (data, token)          => post('/expenses', data, token),
+  update:     (id, data, token)      => put(`/expenses/${id}`, data, token),
+  delete:     (id, token)            => del(`/expenses/${id}`, token),
+  getSummary: (token)                => get('/expenses/summary', token),
+}
+
+export const incomesApi = {
+  list:       (token)                => get('/incomes', token),
+  create:     (data, token)          => post('/incomes', data, token),
+  update:     (id, data, token)      => put(`/incomes/${id}`, data, token),
+  delete:     (id, token)            => del(`/incomes/${id}`, token),
+  getSummary: (token)                => get('/incomes/summary', token),
+}
+
+export const housesApi = {
+  getMonthlyReport: (year, token)    => get(`/houses/reports/monthly?year=${year}`, token),
+}
+
