@@ -1,4 +1,4 @@
-export const API = import.meta.env.VITE_API_URL || 'http://192.168.8.32:8000'
+export const API = import.meta.env.VITE_API_URL || 'https://fnra.io/api/'
 
 export function resolveUrl(url) {
   if (!url) return ''
@@ -38,67 +38,67 @@ export async function uploadImage(file, token) {
   return data.url   // e.g. "/static/uploads/abc123.jpg"
 }
 
-export const get  = (path, token)        => request('GET',    path, null, token)
-export const post = (path, body, token)  => request('POST',   path, body, token)
-export const put  = (path, body, token)  => request('PUT',    path, body, token)
-export const del  = (path, token)        => request('DELETE', path, null, token)
+export const get = (path, token) => request('GET', path, null, token)
+export const post = (path, body, token) => request('POST', path, body, token)
+export const put = (path, body, token) => request('PUT', path, body, token)
+export const del = (path, token) => request('DELETE', path, null, token)
 
-export const slidesApi  = {
-  list:   ()                     => get('/cms/slides'),
-  create: (data, token)          => post('/cms/slides', data, token),
-  update: (id, data, token)      => put(`/cms/slides/${id}`, data, token),
-  delete: (id, token)            => del(`/cms/slides/${id}`, token),
+export const slidesApi = {
+  list: () => get('/cms/slides'),
+  create: (data, token) => post('/cms/slides', data, token),
+  update: (id, data, token) => put(`/cms/slides/${id}`, data, token),
+  delete: (id, token) => del(`/cms/slides/${id}`, token),
 }
 export const newsApi = {
-  list:   ()                     => get('/cms/news'),
-  create: (data, token)          => post('/cms/news', data, token),
-  update: (id, data, token)      => put(`/cms/news/${id}`, data, token),
-  delete: (id, token)            => del(`/cms/news/${id}`, token),
+  list: () => get('/cms/news'),
+  create: (data, token) => post('/cms/news', data, token),
+  update: (id, data, token) => put(`/cms/news/${id}`, data, token),
+  delete: (id, token) => del(`/cms/news/${id}`, token),
 }
 export const galleryApi = {
-  list:   ()                     => get('/cms/gallery'),
-  create: (data, token)          => post('/cms/gallery', data, token),
-  update: (id, data, token)      => put(`/cms/gallery/${id}`, data, token),
-  delete: (id, token)            => del(`/cms/gallery/${id}`, token),
+  list: () => get('/cms/gallery'),
+  create: (data, token) => post('/cms/gallery', data, token),
+  update: (id, data, token) => put(`/cms/gallery/${id}`, data, token),
+  delete: (id, token) => del(`/cms/gallery/${id}`, token),
 }
 export const publicContactsApi = {
-  list:   ()                     => get('/contacts'),
-  listBy: (category)             => get(`/contacts?category=${category}`),
+  list: () => get('/contacts'),
+  listBy: (category) => get(`/contacts?category=${category}`),
 }
 export const adminContactsApi = {
-  list:   (token)                => get('/contacts', token),
-  create: (data, token)          => post('/contacts', data, token),
-  update: (id, data, token)      => put(`/contacts/${id}`, data, token),
-  delete: (id, token)            => del(`/contacts/${id}`, token),
+  list: (token) => get('/contacts', token),
+  create: (data, token) => post('/contacts', data, token),
+  update: (id, data, token) => put(`/contacts/${id}`, data, token),
+  delete: (id, token) => del(`/contacts/${id}`, token),
 }
 export const committeeApi = {
-  listPublic: ()                => get('/committee'),
-  listAll:    (token)           => get('/committee/all', token),
-  create:     (data, token)     => post('/committee', data, token),
-  update:     (id, data, token) => put(`/committee/${id}`, data, token),
-  delete:     (id, token)       => del(`/committee/${id}`, token),
+  listPublic: () => get('/committee'),
+  listAll: (token) => get('/committee/all', token),
+  create: (data, token) => post('/committee', data, token),
+  update: (id, data, token) => put(`/committee/${id}`, data, token),
+  delete: (id, token) => del(`/committee/${id}`, token),
 }
 export const authApi = {
   login: (email, password) => post('/auth/login', { email, password }),
 }
 
 export const expensesApi = {
-  list:       (token)                => get('/expenses', token),
-  create:     (data, token)          => post('/expenses', data, token),
-  update:     (id, data, token)      => put(`/expenses/${id}`, data, token),
-  delete:     (id, token)            => del(`/expenses/${id}`, token),
-  getSummary: (token)                => get('/expenses/summary', token),
+  list: (token) => get('/expenses', token),
+  create: (data, token) => post('/expenses', data, token),
+  update: (id, data, token) => put(`/expenses/${id}`, data, token),
+  delete: (id, token) => del(`/expenses/${id}`, token),
+  getSummary: (token) => get('/expenses/summary', token),
 }
 
 export const incomesApi = {
-  list:       (token)                => get('/incomes', token),
-  create:     (data, token)          => post('/incomes', data, token),
-  update:     (id, data, token)      => put(`/incomes/${id}`, data, token),
-  delete:     (id, token)            => del(`/incomes/${id}`, token),
-  getSummary: (token)                => get('/incomes/summary', token),
+  list: (token) => get('/incomes', token),
+  create: (data, token) => post('/incomes', data, token),
+  update: (id, data, token) => put(`/incomes/${id}`, data, token),
+  delete: (id, token) => del(`/incomes/${id}`, token),
+  getSummary: (token) => get('/incomes/summary', token),
 }
 
 export const housesApi = {
-  getMonthlyReport: (year, token)    => get(`/houses/reports/monthly?year=${year}`, token),
+  getMonthlyReport: (year, token) => get(`/houses/reports/monthly?year=${year}`, token),
 }
 
