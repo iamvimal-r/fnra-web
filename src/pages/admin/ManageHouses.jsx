@@ -2,12 +2,12 @@ import { useEffect, useState, useMemo } from 'react'
 import { housesApi } from '../../api'
 import FnraHousePlaque from '../../components/FnraHousePlaque'
 
-const BLOCKS = ['Block A', 'Block B', 'Block C', 'Block D']
+const BLOCKS = ['Block A', 'Block B']
 
 const EMPTY_HOUSE = {
   house_number: '',
   house_name: '',
-  block: 'Block C',
+  block: 'Block A',
   owner_name: '',
   status: 'Active',
   family_members: [],
@@ -79,7 +79,7 @@ export default function ManageHouses({ token }) {
     setForm({
       house_number: h.house_number || '',
       house_name: h.house_name || '',
-      block: h.block || 'Block C',
+      block: h.block || 'Block A',
       owner_name: h.owner_name || '',
       status: h.status || 'Active',
       family_members: Array.isArray(h.family_members) ? [...h.family_members] : [],
@@ -160,10 +160,18 @@ export default function ManageHouses({ token }) {
 
   // Dynamic block list from houses data
   const allBlocks = useMemo(() => {
-    const std = ['Block A', 'Block B', 'Block C', 'Block D']
+    const std = ['Block A', 'Block B']
     const extra = Array.from(new Set((houses || []).map((h) => h.block).filter((b) => b && !std.includes(b)))).sort()
     return [...std, ...extra]
   }, [houses])
+
+  // Available block options inside modal (ensures form.block is always included)
+  const modalBlockOptions = useMemo(() => {
+    const std = ['Block A', 'Block B']
+    const dbBlocks = (houses || []).map((h) => h.block).filter(Boolean)
+    const currentBlock = form.block ? [form.block] : []
+    return Array.from(new Set([...std, ...dbBlocks, ...currentBlock])).sort()
+  }, [houses, form.block])
 
   // Filtered & Sorted Houses
   const filteredHouses = useMemo(() => {
@@ -494,10 +502,10 @@ export default function ManageHouses({ token }) {
                     <label className="form-label" style={{ color: '#9ca3af', fontSize: 13 }}>Block / Location *</label>
                     <select
                       className="form-control"
-                      value={form.block}
-                      onChange={(e) => setForm({ ...form, block: e.target.value })}
+                      value={form.block || 'Block A'}
+                      onChange={(e) => setForm((prev) => ({ ...prev, block: e.target.value }))}
                     >
-                      {allBlocks.map((b) => (
+                      {modalBlockOptions.map((b) => (
                         <option key={b} value={b}>{b}</option>
                       ))}
                     </select>

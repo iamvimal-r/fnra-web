@@ -103,7 +103,7 @@ export default function FnraHousePlaque({ house, onClick, actions }) {
   const houseNum = rawNum.replace(/^fnra[-_\s]*/i, '').replace(/^house[-_\s]*/i, '') || rawNum
   const houseName = house.house_name || ''
   const ownerName = house.owner_name || 'Resident'
-  const blockName = house.block || 'Block C'
+  const blockName = house.block || 'Block A'
   const familyCount = Array.isArray(house.family_members) ? house.family_members.length : 0
 
   return (

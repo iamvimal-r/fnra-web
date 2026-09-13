@@ -89,7 +89,6 @@ function Navbar() {
         <a href="#committee" onClick={(e) => navTo(e, 'committee')} className="nav-link">Committee</a>
         <a href="#emergency" onClick={(e) => navTo(e, 'emergency')} className="nav-link" style={{ color: '#fca5a5' }}>🚨 Emergency</a>
         <a href="#about"     onClick={(e) => navTo(e, 'about')}     className="nav-link">About</a>
-        <Link to="/admin/houses" className="nav-link admin-link" title="Admin Houses Management">⚙ Admin</Link>
       </div>
     </nav>
   )
@@ -723,7 +722,7 @@ function HousesSection({ houses }) {
 
   // Dynamically compute available blocks from houses dataset
   const availableBlocks = useMemo(() => {
-    const std = ['ALL', 'Block A', 'Block B', 'Block C', 'Block D']
+    const std = ['ALL', 'Block A', 'Block B']
     const extra = Array.from(new Set((houses || []).map(h => h.block).filter(b => b && !std.includes(b)))).sort()
     return extra.length > 0 ? [...std, 'Other Blocks'] : std
   }, [houses])
@@ -741,7 +740,7 @@ function HousesSection({ houses }) {
       const matchBlock = selectedBlock === 'ALL'
         ? true
         : selectedBlock === 'Other Blocks'
-        ? !['Block A', 'Block B', 'Block C', 'Block D'].includes(h.block)
+        ? !['Block A', 'Block B'].includes(h.block)
         : h.block === selectedBlock
 
       return matchSearch && matchBlock
