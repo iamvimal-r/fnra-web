@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { slidesApi, newsApi, galleryApi, publicContactsApi, committeeApi, resolveUrl } from '../api'
+import { slidesApi, newsApi, galleryApi, publicContactsApi, committeeApi, housesApi, resolveUrl } from '../api'
 
 // ── Animation Wrapper ─────────────────────────────────────────────────────────
 function Reveal({ children, className = '', type = 'reveal', delay = 0 }) {
@@ -73,6 +73,7 @@ function Navbar() {
       </div>
       <div className="navbar-links">
         <a href="#home"      className="nav-link">Home</a>
+        <a href="#houses"    className="nav-link">Houses</a>
         <a href="#news"      className="nav-link">News</a>
         <a href="#gallery"   className="nav-link">Gallery</a>
         <a href="#committee" className="nav-link">Committee</a>
@@ -706,6 +707,169 @@ function AboutSection() {
   )
 }
 
+function HousesSection({ houses }) {
+  const [search, setSearch] = useState('')
+  const [selectedBlock, setSelectedBlock] = useState('ALL')
+
+  const blocks = ['ALL', 'Block A', 'Block B', 'Block C', 'Block D']
+
+  const filtered = (houses || []).filter(h => {
+    const q = search.toLowerCase().trim()
+    const matchSearch = !q || (h.house_number && h.house_number.toLowerCase().includes(q)) || (h.owner_name && h.owner_name.toLowerCase().includes(q))
+    const matchBlock = selectedBlock === 'ALL' || h.block === selectedBlock
+    return matchSearch && matchBlock
+  }).sort((a, b) => {
+    const numA = parseInt(a.house_number) || 0
+    const numB = parseInt(b.house_number) || 0
+    if (numA !== numB) return numA - numB
+    return (a.house_number || '').localeCompare(b.house_number || '')
+  })
+
+  return (
+    <section id="houses" className="section" style={{ background: '#0b1120', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+      <div className="container">
+        <Reveal type="reveal">
+          <div className="section-header text-center" style={{ marginBottom: 32 }}>
+            <div className="section-label">COMMUNITY DIRECTORY</div>
+            <h2 className="section-title">🏠 Houses & Residents Directory</h2>
+            <p className="section-sub">Search and explore registered homes across Falcon Nagar Residence Association.</p>
+          </div>
+        </Reveal>
+
+        {/* Filter controls */}
+        <Reveal type="reveal" delay={100}>
+          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28, background: '#111827', padding: '14px 20px', borderRadius: 16, border: '1px solid rgba(255,255,255,0.08)' }}>
+            <div style={{ flex: 1, minWidth: 260 }}>
+              <input
+                type="text"
+                placeholder="🔍 Search House No. or Resident Name (English / മലയാളം)..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '10px 16px',
+                  borderRadius: 10,
+                  background: '#1f2937',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  color: '#fff',
+                  fontSize: 14,
+                  outline: 'none',
+                }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {blocks.map(b => (
+                <button
+                  key={b}
+                  onClick={() => setSelectedBlock(b)}
+                  style={{
+                    padding: '7px 14px',
+                    borderRadius: 20,
+                    border: '1px solid',
+                    borderColor: selectedBlock === b ? '#f59e0b' : 'rgba(255,255,255,0.1)',
+                    background: selectedBlock === b ? 'rgba(245,158,11,0.2)' : 'rgba(255,255,255,0.04)',
+                    color: selectedBlock === b ? '#f59e0b' : '#9ca3af',
+                    fontWeight: 700,
+                    fontSize: 13,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  {b === 'ALL' ? 'All Houses' : b}
+                </button>
+              ))}
+            </div>
+          </div>
+        </Reveal>
+
+        {/* Directory Grid */}
+        {filtered.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '60px 0', color: '#9ca3af' }}>
+            <span style={{ fontSize: 40 }}>🏡</span>
+            <p style={{ marginTop: 12, fontSize: 15 }}>No matching house records found.</p>
+          </div>
+        ) : (
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+            gap: 16,
+          }}>
+            {filtered.map((h, i) => {
+              const isNc = h.status === 'NC' || h.status === 'Inactive'
+              return (
+                <Reveal key={h._id || h.id || i} type="reveal" delay={(i % 6) * 50}>
+                  <div
+                    style={{
+                      background: 'linear-gradient(145deg, #111827, #1f2937)',
+                      borderRadius: 14,
+                      padding: 16,
+                      border: '1px solid rgba(255,255,255,0.08)',
+                      transition: 'transform 0.2s, boxShadow 0.2s',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      position: 'relative',
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.transform = 'translateY(-3px)'
+                      e.currentTarget.style.boxShadow = '0 10px 25px rgba(0,0,0,0.5)'
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.transform = 'translateY(0)'
+                      e.currentTarget.style.boxShadow = 'none'
+                    }}
+                  >
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                        <span style={{
+                          padding: '4px 10px',
+                          borderRadius: 8,
+                          background: 'rgba(56,189,248,0.15)',
+                          color: '#38bdf8',
+                          fontWeight: 900,
+                          fontSize: 14,
+                          border: '1px solid rgba(56,189,248,0.3)',
+                        }}>
+                          #{h.house_number}
+                        </span>
+                        <span style={{
+                          padding: '2px 8px',
+                          borderRadius: 10,
+                          fontSize: 11,
+                          fontWeight: 700,
+                          background: isNc ? 'rgba(239,68,68,0.15)' : 'rgba(52,211,153,0.15)',
+                          color: isNc ? '#f87171' : '#34d399',
+                          border: `1px solid ${isNc ? 'rgba(239,68,68,0.3)' : 'rgba(52,211,153,0.3)'}`,
+                        }}>
+                          {isNc ? 'NC' : 'Active'}
+                        </span>
+                      </div>
+
+                      <div style={{ fontSize: 16, fontWeight: 700, color: '#f9fafb', marginBottom: 4, lineHeight: 1.3 }}>
+                        {h.owner_name}
+                      </div>
+                      <div style={{ fontSize: 12, color: '#9ca3af' }}>
+                        📍 {h.block || 'Block C'}
+                      </div>
+                    </div>
+
+                    {Array.isArray(h.family_members) && h.family_members.length > 0 && (
+                      <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.06)', fontSize: 12, color: '#a78bfa', fontWeight: 600 }}>
+                        👥 {h.family_members.length} Family Member(s)
+                      </div>
+                    )}
+                  </div>
+                </Reveal>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    </section>
+  )
+}
+
 // ── Footer ────────────────────────────────────────────────────────────────────
 function Footer() {
   return (
@@ -735,6 +899,7 @@ export default function PublicSite() {
   const [gallery,   setGallery]   = useState([])
   const [contacts,  setContacts]  = useState([])
   const [committee, setCommittee] = useState([])
+  const [houses,    setHouses]    = useState([])
 
   useEffect(() => {
     slidesApi.list().then(setSlides).catch(() => {})
@@ -742,12 +907,14 @@ export default function PublicSite() {
     galleryApi.list().then(setGallery).catch(() => {})
     publicContactsApi.list().then(setContacts).catch(() => {})
     committeeApi.listPublic().then(setCommittee).catch(() => {})
+    housesApi.listPublic().then(setHouses).catch(() => {})
   }, [])
 
   return (
     <>
       <Navbar />
       <HeroSlider slides={slides} />
+      <HousesSection houses={houses} />
       <NewsSection news={news} />
       <GallerySection gallery={gallery} />
       <CommitteeSection members={committee} />
