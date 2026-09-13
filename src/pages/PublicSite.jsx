@@ -37,15 +37,15 @@ function Navbar() {
     return () => window.removeEventListener('scroll', fn)
   }, [])
   return (
-    <nav className="navbar" style={{ background: scrolled ? 'rgba(13,27,62,0.98)' : 'rgba(13,27,62,0.7)' }}>
+    <nav className="navbar" style={{ background: scrolled ? 'rgba(7, 11, 20, 0.98)' : 'rgba(7, 11, 20, 0.75)' }}>
       <div className="navbar-brand">
         {/* Logo with gold ring */}
         <div style={{
           width: 52, height: 52, borderRadius: '50%',
-          border: '2px solid #d4a017',
-          boxShadow: '0 0 12px rgba(212,160,23,0.4)',
+          border: '2px solid #f59e0b',
+          boxShadow: '0 0 16px rgba(245,158,11,0.35)',
           overflow: 'hidden', flexShrink: 0,
-          background: '#0d1b3e',
+          background: '#070b14',
         }}>
           <img
             src="/icon.png"
@@ -53,20 +53,20 @@ function Navbar() {
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             onError={e => {
               e.target.style.display = 'none'
-              e.target.parentElement.innerHTML = '<span style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:22px;font-weight:900;color:#d4a017;">🦅</span>'
+              e.target.parentElement.innerHTML = '<span style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:22px;font-weight:900;color:#f59e0b;">🦅</span>'
             }}
           />
         </div>
         <div style={{ marginLeft: 12 }}>
           <div style={{
-            fontSize: 22, fontWeight: 900, letterSpacing: 3,
-            background: 'linear-gradient(135deg, #f0c040, #d4a017)',
+            fontSize: 22, fontWeight: 900, letterSpacing: 3, fontFamily: "'Outfit', sans-serif",
+            background: 'linear-gradient(135deg, #ffffff, #f59e0b)',
             WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
             lineHeight: 1.1,
           }}>
             FNRA
           </div>
-          <div style={{ fontSize: 9, color: '#d4a017', fontWeight: 600, letterSpacing: 2, marginTop: 1 }}>
+          <div style={{ fontSize: 9, color: '#f59e0b', fontWeight: 700, letterSpacing: 2, marginTop: 1 }}>
             FALCON NAGAR · TVM/TC/1496/2015
           </div>
         </div>
@@ -107,9 +107,9 @@ const DEFAULT_SLIDES = [
 ]
 
 const SLIDE_COLORS = [
-  'linear-gradient(135deg, #0d1b3e 0%, #1a2d5a 50%, #0d1b3e 100%)',
-  'linear-gradient(135deg, #1a0d3e 0%, #2d1a5a 50%, #1a0d3e 100%)',
-  'linear-gradient(135deg, #0d2f3e 0%, #1a4a5a 50%, #0d2f3e 100%)',
+  'linear-gradient(135deg, #070b14 0%, #1e293b 50%, #0f172a 100%)',
+  'linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #070b14 100%)',
+  'linear-gradient(135deg, #022c22 0%, #0f172a 50%, #070b14 100%)',
 ]
 
 function HeroSlider({ slides }) {
