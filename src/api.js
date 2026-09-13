@@ -101,6 +101,10 @@ export const incomesApi = {
 }
 
 export const housesApi = {
+  list: (token) => get('/houses', token),
+  create: (data, token) => post('/houses', data, token),
+  update: (id, data, token) => put(`/houses/${id}`, data, token),
+  delete: (id, token) => del(`/houses/${id}`, token),
   getMonthlyReport: (year, token) => get(`/houses/reports/monthly?year=${year}`, token),
 }
 
