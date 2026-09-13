@@ -42,6 +42,7 @@ export const get = (path, token) => request('GET', path, null, token)
 export const post = (path, body, token) => request('POST', path, body, token)
 export const put = (path, body, token) => request('PUT', path, body, token)
 export const del = (path, token) => request('DELETE', path, null, token)
+export const delWithBody = (path, body, token) => request('DELETE', path, body, token)
 
 export const slidesApi = {
   list: () => get('/cms/slides'),
@@ -60,6 +61,7 @@ export const galleryApi = {
   create: (data, token) => post('/cms/gallery', data, token),
   update: (id, data, token) => put(`/cms/gallery/${id}`, data, token),
   delete: (id, token) => del(`/cms/gallery/${id}`, token),
+  bulkDelete: (ids, token) => delWithBody('/cms/gallery/bulk-delete', { ids }, token),
 }
 export const publicContactsApi = {
   list: () => get('/contacts'),

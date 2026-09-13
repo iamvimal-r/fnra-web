@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import PublicSite from './pages/PublicSite'
 import AdminLogin from './pages/AdminLogin'
@@ -9,6 +9,13 @@ export default function App() {
   const [admin, setAdmin] = useState(() => {
     try { return JSON.parse(localStorage.getItem('fnra_user') || 'null') } catch { return null }
   })
+
+  // Auto-migrate pathname like /admin/gallery to /#/admin/gallery if accessed directly without hash
+  useEffect(() => {
+    if (window.location.pathname.startsWith('/admin') && !window.location.hash) {
+      window.location.replace('/#' + window.location.pathname)
+    }
+  }, [])
 
   const handleLogin = (tok, user) => {
     localStorage.setItem('fnra_token', tok)
@@ -24,7 +31,7 @@ export default function App() {
   }
 
   return (
-    <BrowserRouter>
+    <HashRouter>
       <Routes>
         <Route path="/" element={<PublicSite />} />
         <Route path="/admin/login" element={token ? <Navigate to="/admin" /> : <AdminLogin onLogin={handleLogin} />} />
@@ -33,6 +40,6 @@ export default function App() {
           element={token ? <AdminLayout token={token} admin={admin} onLogout={handleLogout} /> : <Navigate to="/admin/login" />}
         />
       </Routes>
-    </BrowserRouter>
+    </HashRouter>
   )
 }

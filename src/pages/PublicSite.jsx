@@ -90,14 +90,18 @@ const DEFAULT_SLIDES = [
     id: 'default-1',
     title: 'Welcome to Falcon Nagar',
     subtitle: 'Your trusted residence association since 2015. Building community, one home at a time.',
+    tag: 'Community First',
     image_url: '',
+    link: '#about',
     active: true,
   },
   {
     id: 'default-2',
-    title: 'Community First',
+    title: 'Active Residence Management',
     subtitle: 'We manage facilities, resolve complaints, and keep Falcon Nagar safe and thriving.',
+    tag: 'Est. 2015',
     image_url: '',
+    link: '#news',
     active: true,
   },
 ]
@@ -110,17 +114,26 @@ const SLIDE_COLORS = [
 
 function HeroSlider({ slides }) {
   const [current, setCurrent] = useState(0)
-  const list = slides.length ? slides : DEFAULT_SLIDES
+  const [isPaused, setIsPaused] = useState(false)
+
+  const activeSlides = slides.filter(s => s.active !== false)
+  const list = activeSlides.length ? activeSlides : DEFAULT_SLIDES
 
   useEffect(() => {
+    if (isPaused) return
     const t = setInterval(() => setCurrent(c => (c + 1) % list.length), 5000)
     return () => clearInterval(t)
-  }, [list.length])
+  }, [list.length, isPaused])
 
   return (
-    <section id="home" className="hero">
+    <section
+      id="home"
+      className="hero"
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+    >
       {list.map((slide, i) => (
-        <div key={slide.id} className={`hero-slide ${i === current ? 'active' : ''}`}>
+        <div key={slide.id || i} className={`hero-slide ${i === current ? 'active' : ''}`}>
           {slide.image_url ? (
             <img src={resolveUrl(slide.image_url)} alt={slide.title} className="hero-bg" />
           ) : (
@@ -130,7 +143,7 @@ function HeroSlider({ slides }) {
           <div className="container">
             <div className="hero-content">
               <Reveal type="reveal" delay={100}>
-                <div className="hero-tag">🦅 Falcon Nagar Residence Association</div>
+                <div className="hero-tag">🦅 {slide.tag || 'Falcon Nagar Residence Association'}</div>
               </Reveal>
               <Reveal type="reveal" delay={200}>
                 <h1 className="hero-title">
@@ -144,7 +157,11 @@ function HeroSlider({ slides }) {
               </Reveal>
               <Reveal type="reveal" delay={400}>
                 <div className="hero-actions">
-                  <a href="#news" className="btn btn-primary">📰 Latest News</a>
+                  {slide.link ? (
+                    <a href={slide.link} className="btn btn-primary">🌟 Explore Details</a>
+                  ) : (
+                    <a href="#news" className="btn btn-primary">📰 Latest News</a>
+                  )}
                   <a href="#about" className="btn btn-outline">About Us</a>
                 </div>
               </Reveal>
@@ -174,7 +191,7 @@ function NewsSection({ news }) {
       <div className="container">
         <div className="section-header">
           <Reveal type="reveal-scale"><div className="section-label">Latest Updates</div></Reveal>
-          <Reveal delay={100}><h2 className="section-title">News & Notices</h2></Reveal>
+          <Reveal delay={100}><h2 className="section-title">News &amp; Notices</h2></Reveal>
           <Reveal delay={200}><p className="section-sub">Stay informed about the latest happenings in Falcon Nagar.</p></Reveal>
         </div>
         {news.length === 0 ? (
@@ -210,39 +227,121 @@ function NewsSection({ news }) {
 
 // ── Gallery Section ───────────────────────────────────────────────────────────
 function GallerySection({ gallery }) {
-  const [lightbox, setLightbox] = useState(null)
+  const [catFilter, setCatFilter] = useState('all')
+  const [lightboxIndex, setLightboxIndex] = useState(null)
+
+  const activePhotos = gallery.filter(g => g.active !== false)
+  const categories = ['all', ...new Set(activePhotos.map(g => g.category || 'general'))]
+
+  const visiblePhotos = activePhotos.filter(g => catFilter === 'all' || (g.category || 'general') === catFilter)
+
+  const prevLightbox = e => {
+    e.stopPropagation()
+    setLightboxIndex(c => (c === 0 ? visiblePhotos.length - 1 : c - 1))
+  }
+
+  const nextLightbox = e => {
+    e.stopPropagation()
+    setLightboxIndex(c => (c === visiblePhotos.length - 1 ? 0 : c + 1))
+  }
+
   return (
     <section id="gallery" className="section section-alt">
       <div className="container">
         <div className="section-header">
           <Reveal type="reveal-scale"><div className="section-label">Our Community</div></Reveal>
-          <Reveal delay={100}><h2 className="section-title">Photo Gallery</h2></Reveal>
+          <Reveal delay={100}><h2 className="section-title">Photo Gallery &amp; Albums</h2></Reveal>
           <Reveal delay={200}><p className="section-sub">Moments from Falcon Nagar — events, facilities, and community life.</p></Reveal>
         </div>
-        {gallery.length === 0 ? (
+
+        {/* Category Pill Tabs */}
+        {activePhotos.length > 0 && categories.length > 1 && (
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 36 }}>
+            {categories.map(cat => (
+              <button
+                key={cat}
+                onClick={() => setCatFilter(cat)}
+                style={{
+                  padding: '8px 18px', borderRadius: 20, fontSize: 13, fontWeight: 700,
+                  border: catFilter === cat ? '1px solid #d4a017' : '1px solid rgba(255,255,255,0.12)',
+                  background: catFilter === cat ? 'rgba(212,160,23,0.2)' : 'rgba(255,255,255,0.04)',
+                  color: catFilter === cat ? '#f0c040' : '#9ca3af',
+                  cursor: 'pointer', transition: 'all 0.2s', textTransform: 'capitalize',
+                }}
+              >
+                {cat === 'all' ? '✨ All Photos' : cat}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {visiblePhotos.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--gray)' }}>
             <div style={{ fontSize: 48, marginBottom: 12 }}>🖼️</div>
             <p>Gallery is empty. Add photos from the admin panel!</p>
           </div>
         ) : (
           <div className="gallery-grid">
-            {gallery.map((item, i) => (
-              <Reveal key={item.id} type="reveal-scale" delay={(i % 4) * 100}>
-                <div className="gallery-item" onClick={() => setLightbox(item)}>
-                  <img src={resolveUrl(item.image_url)} alt={item.title} loading="lazy" onError={e => { e.target.style.display='none'; e.target.parentElement.style.background='#1a2d5a' }} />
+            {visiblePhotos.map((item, i) => (
+              <Reveal key={item.id || i} type="reveal-scale" delay={(i % 4) * 100}>
+                <div className="gallery-item" onClick={() => setLightboxIndex(i)} style={{ position: 'relative' }}>
+                  <img
+                    src={resolveUrl(item.image_url)}
+                    alt={item.title}
+                    loading="lazy"
+                    onError={e => { e.target.style.display='none'; e.target.parentElement.style.background='#1a2d5a' }}
+                  />
                   <div className="gallery-overlay">
                     <span className="gallery-overlay-text">🔍 {item.title}</span>
                   </div>
+                  {item.category && (
+                    <span style={{ position: 'absolute', top: 10, right: 10, background: 'rgba(13,27,62,0.85)', color: '#d4a017', fontSize: 10, fontWeight: 800, padding: '3px 10px', borderRadius: 12, border: '1px solid rgba(212,160,23,0.4)', textTransform: 'uppercase', letterSpacing: 1 }}>
+                      {item.category}
+                    </span>
+                  )}
                 </div>
               </Reveal>
             ))}
           </div>
         )}
       </div>
-      {lightbox && (
-        <div className="lightbox" onClick={() => setLightbox(null)}>
-          <img src={resolveUrl(lightbox.image_url)} alt={lightbox.title} onClick={e => e.stopPropagation()} />
-          <button className="lightbox-close" onClick={() => setLightbox(null)}>✕</button>
+
+      {/* Interactive Lightbox with prev/next navigation */}
+      {lightboxIndex !== null && visiblePhotos[lightboxIndex] && (
+        <div className="lightbox" onClick={() => setLightboxIndex(null)}>
+          <div style={{ position: 'relative', maxWidth: '90vw', maxHeight: '90vh', display: 'flex', flexDirection: 'column', alignItems: 'center' }} onClick={e => e.stopPropagation()}>
+            <img
+              src={resolveUrl(visiblePhotos[lightboxIndex].image_url)}
+              alt={visiblePhotos[lightboxIndex].title}
+              style={{ maxHeight: '75vh', borderRadius: 12, boxShadow: '0 20px 60px rgba(0,0,0,0.8)' }}
+            />
+            <div style={{ marginTop: 16, textAlign: 'center', color: '#fff' }}>
+              <h3 style={{ fontSize: 18, fontWeight: 800, margin: '0 0 4px 0' }}>{visiblePhotos[lightboxIndex].title}</h3>
+              {visiblePhotos[lightboxIndex].description && (
+                <p style={{ fontSize: 13, color: '#9ca3af', margin: 0 }}>{visiblePhotos[lightboxIndex].description}</p>
+              )}
+            </div>
+
+            {visiblePhotos.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  onClick={prevLightbox}
+                  style={{ position: 'absolute', left: -48, top: '45%', background: 'rgba(0,0,0,0.7)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', width: 44, height: 44, borderRadius: '50%', cursor: 'pointer', fontSize: 22, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  ‹
+                </button>
+                <button
+                  type="button"
+                  onClick={nextLightbox}
+                  style={{ position: 'absolute', right: -48, top: '45%', background: 'rgba(0,0,0,0.7)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', width: 44, height: 44, borderRadius: '50%', cursor: 'pointer', fontSize: 22, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  ›
+                </button>
+              </>
+            )}
+          </div>
+          <button className="lightbox-close" onClick={() => setLightboxIndex(null)}>✕</button>
         </div>
       )}
     </section>
