@@ -101,8 +101,8 @@ export const incomesApi = {
 }
 
 export const housesApi = {
-  list: (token) => get('/houses', token),
-  listPublic: () => get('/houses'),
+  list: (token) => get('/houses', token).catch(() => get('/houses/public')),
+  listPublic: () => get('/houses/public'),
   create: (data, token) => post('/houses', data, token),
   update: (id, data, token) => put(`/houses/${id}`, data, token),
   delete: (id, token) => del(`/houses/${id}`, token),
