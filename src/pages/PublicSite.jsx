@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { slidesApi, newsApi, galleryApi, publicContactsApi, committeeApi, housesApi, resolveUrl } from '../api'
+import FnraHousePlaque from '../components/FnraHousePlaque'
 
 // ── Animation Wrapper ─────────────────────────────────────────────────────────
 function Reveal({ children, className = '', type = 'reveal', delay = 0 }) {
@@ -36,9 +37,18 @@ function Navbar() {
     window.addEventListener('scroll', fn)
     return () => window.removeEventListener('scroll', fn)
   }, [])
+
+  const navTo = (e, id) => {
+    if (e) e.preventDefault()
+    const el = document.getElementById(id)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' })
+    }
+  }
+
   return (
     <nav className="navbar" style={{ background: scrolled ? 'rgba(7, 11, 20, 0.98)' : 'rgba(7, 11, 20, 0.75)' }}>
-      <div className="navbar-brand">
+      <div className="navbar-brand" onClick={(e) => navTo(e, 'home')} style={{ cursor: 'pointer' }}>
         {/* Logo with gold ring */}
         <div style={{
           width: 52, height: 52, borderRadius: '50%',
@@ -72,14 +82,14 @@ function Navbar() {
         </div>
       </div>
       <div className="navbar-links">
-        <a href="#home"      className="nav-link">Home</a>
-        <a href="#houses"    className="nav-link">Houses</a>
-        <a href="#news"      className="nav-link">News</a>
-        <a href="#gallery"   className="nav-link">Gallery</a>
-        <a href="#committee" className="nav-link">Committee</a>
-        <a href="#emergency" className="nav-link" style={{ color: '#fca5a5' }}>🚨 Emergency</a>
-        <a href="#about"     className="nav-link">About</a>
-        <Link to="/admin"    className="nav-link admin-link">⚙ Admin</Link>
+        <a href="#home"      onClick={(e) => navTo(e, 'home')}      className="nav-link">Home</a>
+        <a href="#houses"    onClick={(e) => navTo(e, 'houses')}    className="nav-link" style={{ fontWeight: 800, color: '#f59e0b' }}>🏠 Houses</a>
+        <a href="#news"      onClick={(e) => navTo(e, 'news')}      className="nav-link">News</a>
+        <a href="#gallery"   onClick={(e) => navTo(e, 'gallery')}   className="nav-link">Gallery</a>
+        <a href="#committee" onClick={(e) => navTo(e, 'committee')} className="nav-link">Committee</a>
+        <a href="#emergency" onClick={(e) => navTo(e, 'emergency')} className="nav-link" style={{ color: '#fca5a5' }}>🚨 Emergency</a>
+        <a href="#about"     onClick={(e) => navTo(e, 'about')}     className="nav-link">About</a>
+        <Link to="/admin/houses" className="nav-link admin-link" title="Admin Houses Management">⚙ Admin</Link>
       </div>
     </nav>
   )
@@ -711,19 +721,36 @@ function HousesSection({ houses }) {
   const [search, setSearch] = useState('')
   const [selectedBlock, setSelectedBlock] = useState('ALL')
 
-  const blocks = ['ALL', 'Block A', 'Block B', 'Block C', 'Block D']
+  // Dynamically compute available blocks from houses dataset
+  const availableBlocks = useMemo(() => {
+    const std = ['ALL', 'Block A', 'Block B', 'Block C', 'Block D']
+    const extra = Array.from(new Set((houses || []).map(h => h.block).filter(b => b && !std.includes(b)))).sort()
+    return extra.length > 0 ? [...std, 'Other Blocks'] : std
+  }, [houses])
 
-  const filtered = (houses || []).filter(h => {
-    const q = search.toLowerCase().trim()
-    const matchSearch = !q || (h.house_number && h.house_number.toLowerCase().includes(q)) || (h.owner_name && h.owner_name.toLowerCase().includes(q))
-    const matchBlock = selectedBlock === 'ALL' || h.block === selectedBlock
-    return matchSearch && matchBlock
-  }).sort((a, b) => {
-    const numA = parseInt(a.house_number) || 0
-    const numB = parseInt(b.house_number) || 0
-    if (numA !== numB) return numA - numB
-    return (a.house_number || '').localeCompare(b.house_number || '')
-  })
+  const filtered = useMemo(() => {
+    return (houses || []).filter(h => {
+      const q = search.toLowerCase().trim()
+      const matchSearch = !q ||
+        (h.house_number && h.house_number.toLowerCase().includes(q)) ||
+        (h.owner_name && h.owner_name.toLowerCase().includes(q)) ||
+        (h.block && h.block.toLowerCase().includes(q)) ||
+        (Array.isArray(h.family_members) && h.family_members.some(fm => (fm.name && fm.name.toLowerCase().includes(q)) || (fm.relation && fm.relation.toLowerCase().includes(q))))
+
+      const matchBlock = selectedBlock === 'ALL'
+        ? true
+        : selectedBlock === 'Other Blocks'
+        ? !['Block A', 'Block B', 'Block C', 'Block D'].includes(h.block)
+        : h.block === selectedBlock
+
+      return matchSearch && matchBlock
+    }).sort((a, b) => {
+      const numA = parseInt(a.house_number) || 0
+      const numB = parseInt(b.house_number) || 0
+      if (numA !== numB) return numA - numB
+      return (a.house_number || '').localeCompare(b.house_number || '')
+    })
+  }, [houses, search, selectedBlock])
 
   return (
     <section id="houses" className="section" style={{ background: '#0b1120', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
@@ -731,7 +758,12 @@ function HousesSection({ houses }) {
         <Reveal type="reveal">
           <div className="section-header text-center" style={{ marginBottom: 32 }}>
             <div className="section-label">COMMUNITY DIRECTORY</div>
-            <h2 className="section-title">🏠 Houses & Residents Directory</h2>
+            <h2 className="section-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, flexWrap: 'wrap' }}>
+              <span>🏠 Houses & Residents Directory</span>
+              <span className="badge badge-gold" style={{ fontSize: 13, padding: '4px 12px' }}>
+                {(houses || []).length} Registered Homes
+              </span>
+            </h2>
             <p className="section-sub">Search and explore registered homes across Falcon Nagar Residence Association.</p>
           </div>
         </Reveal>
@@ -742,7 +774,7 @@ function HousesSection({ houses }) {
             <div style={{ flex: 1, minWidth: 260 }}>
               <input
                 type="text"
-                placeholder="🔍 Search House No. or Resident Name (English / മലയാളം)..."
+                placeholder="🔍 Search House No, Owner / Resident Name (English / മലയാളം), Block, or Family Member..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 style={{
@@ -759,7 +791,7 @@ function HousesSection({ houses }) {
             </div>
 
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {blocks.map(b => (
+              {availableBlocks.map(b => (
                 <button
                   key={b}
                   onClick={() => setSelectedBlock(b)}
@@ -792,77 +824,14 @@ function HousesSection({ houses }) {
         ) : (
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-            gap: 16,
+            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+            gap: 20,
           }}>
-            {filtered.map((h, i) => {
-              const isNc = h.status === 'NC' || h.status === 'Inactive'
-              return (
-                <Reveal key={h._id || h.id || i} type="reveal" delay={(i % 6) * 50}>
-                  <div
-                    style={{
-                      background: 'linear-gradient(145deg, #111827, #1f2937)',
-                      borderRadius: 14,
-                      padding: 16,
-                      border: '1px solid rgba(255,255,255,0.08)',
-                      transition: 'transform 0.2s, boxShadow 0.2s',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'space-between',
-                      position: 'relative',
-                    }}
-                    onMouseEnter={e => {
-                      e.currentTarget.style.transform = 'translateY(-3px)'
-                      e.currentTarget.style.boxShadow = '0 10px 25px rgba(0,0,0,0.5)'
-                    }}
-                    onMouseLeave={e => {
-                      e.currentTarget.style.transform = 'translateY(0)'
-                      e.currentTarget.style.boxShadow = 'none'
-                    }}
-                  >
-                    <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                        <span style={{
-                          padding: '4px 10px',
-                          borderRadius: 8,
-                          background: 'rgba(56,189,248,0.15)',
-                          color: '#38bdf8',
-                          fontWeight: 900,
-                          fontSize: 14,
-                          border: '1px solid rgba(56,189,248,0.3)',
-                        }}>
-                          #{h.house_number}
-                        </span>
-                        <span style={{
-                          padding: '2px 8px',
-                          borderRadius: 10,
-                          fontSize: 11,
-                          fontWeight: 700,
-                          background: isNc ? 'rgba(239,68,68,0.15)' : 'rgba(52,211,153,0.15)',
-                          color: isNc ? '#f87171' : '#34d399',
-                          border: `1px solid ${isNc ? 'rgba(239,68,68,0.3)' : 'rgba(52,211,153,0.3)'}`,
-                        }}>
-                          {isNc ? 'NC' : 'Active'}
-                        </span>
-                      </div>
-
-                      <div style={{ fontSize: 16, fontWeight: 700, color: '#f9fafb', marginBottom: 4, lineHeight: 1.3 }}>
-                        {h.owner_name}
-                      </div>
-                      <div style={{ fontSize: 12, color: '#9ca3af' }}>
-                        📍 {h.block || 'Block C'}
-                      </div>
-                    </div>
-
-                    {Array.isArray(h.family_members) && h.family_members.length > 0 && (
-                      <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.06)', fontSize: 12, color: '#a78bfa', fontWeight: 600 }}>
-                        👥 {h.family_members.length} Family Member(s)
-                      </div>
-                    )}
-                  </div>
-                </Reveal>
-              )
-            })}
+            {filtered.map((h, i) => (
+              <Reveal key={h._id || h.id || i} type="reveal" delay={(i % 6) * 40}>
+                <FnraHousePlaque house={h} />
+              </Reveal>
+            ))}
           </div>
         )}
       </div>

@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
 import { housesApi } from '../../api'
+import FnraHousePlaque from '../../components/FnraHousePlaque'
 
 const BLOCKS = ['Block A', 'Block B', 'Block C', 'Block D']
 
@@ -26,6 +27,7 @@ export default function ManageHouses({ token }) {
   const [search, setSearch] = useState('')
   const [blockFilter, setBlockFilter] = useState('ALL')
   const [statusFilter, setStatusFilter] = useState('ALL')
+  const [viewMode, setViewMode] = useState('plaque') // 'plaque' | 'table'
 
   // Modal State
   const [showModal, setShowModal] = useState(false)
@@ -143,14 +145,23 @@ export default function ManageHouses({ token }) {
     }))
   }
 
+  // Dynamic block list from houses data
+  const allBlocks = useMemo(() => {
+    const std = ['Block A', 'Block B', 'Block C', 'Block D']
+    const extra = Array.from(new Set((houses || []).map((h) => h.block).filter((b) => b && !std.includes(b)))).sort()
+    return [...std, ...extra]
+  }, [houses])
+
   // Filtered & Sorted Houses
   const filteredHouses = useMemo(() => {
     return houses.filter((h) => {
       const q = search.toLowerCase().trim()
       const matchSearch =
         !q ||
-        h.house_number.toLowerCase().includes(q) ||
-        h.owner_name.toLowerCase().includes(q)
+        (h.house_number && h.house_number.toLowerCase().includes(q)) ||
+        (h.owner_name && h.owner_name.toLowerCase().includes(q)) ||
+        (h.block && h.block.toLowerCase().includes(q)) ||
+        (Array.isArray(h.family_members) && h.family_members.some(fm => (fm.name && fm.name.toLowerCase().includes(q)) || (fm.relation && fm.relation.toLowerCase().includes(q))))
 
       const matchBlock = blockFilter === 'ALL' || h.block === blockFilter
       const matchStatus =
@@ -165,7 +176,7 @@ export default function ManageHouses({ token }) {
       const numA = parseInt(a.house_number) || 0
       const numB = parseInt(b.house_number) || 0
       if (numA !== numB) return numA - numB
-      return a.house_number.localeCompare(b.house_number)
+      return (a.house_number || '').localeCompare(b.house_number || '')
     })
   }, [houses, search, blockFilter, statusFilter])
 
@@ -207,7 +218,7 @@ export default function ManageHouses({ token }) {
           <div style={{ flex: 1, minWidth: 220 }}>
             <input
               type="text"
-              placeholder="🔍 Search House No. or Owner Name..."
+              placeholder="🔍 Search House No, Owner / Resident Name (English / മലയാളം), Block..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="form-control"
@@ -221,10 +232,10 @@ export default function ManageHouses({ token }) {
               value={blockFilter}
               onChange={(e) => setBlockFilter(e.target.value)}
               className="form-control"
-              style={{ background: '#1f2937', color: '#fff', border: '1px solid #374151', width: 130 }}
+              style={{ background: '#1f2937', color: '#fff', border: '1px solid #374151', minWidth: 140 }}
             >
-              <option value="ALL">All Blocks</option>
-              {BLOCKS.map((b) => (
+              <option value="ALL">All Blocks ({totalCount})</option>
+              {allBlocks.map((b) => (
                 <option key={b} value={b}>{b}</option>
               ))}
             </select>
@@ -244,6 +255,39 @@ export default function ManageHouses({ token }) {
             </select>
           </div>
 
+          <div style={{ display: 'flex', gap: 4, background: '#1f2937', padding: 3, borderRadius: 8, border: '1px solid #374151', marginLeft: 'auto' }}>
+            <button
+              onClick={() => setViewMode('plaque')}
+              style={{
+                padding: '6px 12px',
+                borderRadius: 6,
+                border: 'none',
+                background: viewMode === 'plaque' ? '#d49856' : 'transparent',
+                color: viewMode === 'plaque' ? '#1a0b04' : '#9ca3af',
+                fontWeight: 800,
+                fontSize: 12,
+                cursor: 'pointer',
+              }}
+            >
+              🏷️ Plaque Cards
+            </button>
+            <button
+              onClick={() => setViewMode('table')}
+              style={{
+                padding: '6px 12px',
+                borderRadius: 6,
+                border: 'none',
+                background: viewMode === 'table' ? '#3b82f6' : 'transparent',
+                color: viewMode === 'table' ? '#ffffff' : '#9ca3af',
+                fontWeight: 800,
+                fontSize: 12,
+                cursor: 'pointer',
+              }}
+            >
+              📊 Table List
+            </button>
+          </div>
+
           {(search || blockFilter !== 'ALL' || statusFilter !== 'ALL') && (
             <button
               onClick={() => { setSearch(''); setBlockFilter('ALL'); setStatusFilter('ALL') }}
@@ -255,7 +299,7 @@ export default function ManageHouses({ token }) {
           )}
         </div>
 
-        {/* Houses Data Table */}
+        {/* Houses Display: Plaque View or Table View */}
         {loading ? (
           <div style={{ textAlign: 'center', padding: '60px 0', color: '#9ca3af' }}>
             <div className="spinner" style={{ margin: '0 auto 10px' }} />
@@ -265,6 +309,58 @@ export default function ManageHouses({ token }) {
           <div style={{ textAlign: 'center', padding: '60px 0', background: '#111827', borderRadius: 12, border: '1px solid rgba(255,255,255,0.08)' }}>
             <span style={{ fontSize: 40 }}>🏠</span>
             <p style={{ marginTop: 12, color: '#9ca3af' }}>No house records found matching filter.</p>
+          </div>
+        ) : viewMode === 'plaque' ? (
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+            gap: 20,
+          }}>
+            {filteredHouses.map((h) => {
+              const id = h._id || h.id
+              return (
+                <FnraHousePlaque
+                  key={id}
+                  house={h}
+                  onClick={() => openEdit(h)}
+                  actions={
+                    <>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); openEdit(h) }}
+                        style={{
+                          background: 'rgba(50, 24, 10, 0.85)',
+                          color: '#fef3c7',
+                          border: '1px solid #7c4019',
+                          borderRadius: 6,
+                          padding: '4px 10px',
+                          fontSize: 11,
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        ✏️ Edit
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleDelete(id) }}
+                        disabled={deletingId === id}
+                        style={{
+                          background: '#991b1b',
+                          color: '#ffffff',
+                          border: '1px solid #f87171',
+                          borderRadius: 6,
+                          padding: '4px 10px',
+                          fontSize: 11,
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {deletingId === id ? '...' : '🗑️ Delete'}
+                      </button>
+                    </>
+                  }
+                />
+              )
+            })}
           </div>
         ) : (
           <div style={{ overflowX: 'auto', background: '#111827', borderRadius: 12, border: '1px solid rgba(255,255,255,0.08)' }}>
@@ -381,13 +477,13 @@ export default function ManageHouses({ token }) {
                   </div>
 
                   <div>
-                    <label className="form-label" style={{ color: '#9ca3af', fontSize: 13 }}>Block *</label>
+                    <label className="form-label" style={{ color: '#9ca3af', fontSize: 13 }}>Block / Location *</label>
                     <select
                       className="form-control"
                       value={form.block}
                       onChange={(e) => setForm({ ...form, block: e.target.value })}
                     >
-                      {BLOCKS.map((b) => (
+                      {allBlocks.map((b) => (
                         <option key={b} value={b}>{b}</option>
                       ))}
                     </select>
