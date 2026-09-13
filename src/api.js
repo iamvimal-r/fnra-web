@@ -1,17 +1,22 @@
-export const API = import.meta.env.VITE_API_URL || 'https://fnra.io/api/'
+const BASE = (import.meta.env.VITE_API_URL || 'https://fnra.io/api').replace(/\/+$/, '')
+export const API = BASE
 
 export function resolveUrl(url) {
   if (!url) return ''
-  // Already an absolute URL (external image or old data) — use as-is
   if (url.startsWith('http://') || url.startsWith('https://')) return url
-  // Relative path from our server
-  return `${API}${url}`
+  const cleanPath = url.startsWith('/') ? url : `/${url}`
+  return `${BASE}${cleanPath}`
+}
+
+function buildUrl(path) {
+  const cleanPath = path.startsWith('/') ? path : `/${path}`
+  return `${BASE}${cleanPath}`
 }
 
 async function request(method, path, body, token) {
   const headers = { 'Content-Type': 'application/json' }
   if (token) headers['Authorization'] = `Bearer ${token}`
-  const res = await fetch(`${API}${path}`, {
+  const res = await fetch(buildUrl(path), {
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,
@@ -28,14 +33,13 @@ export async function uploadImage(file, token) {
   form.append('file', file)
   const headers = {}
   if (token) headers['Authorization'] = `Bearer ${token}`
-  const res = await fetch(`${API}/cms/upload`, { method: 'POST', headers, body: form })
+  const res = await fetch(buildUrl('/cms/upload'), { method: 'POST', headers, body: form })
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: 'Upload failed' }))
     throw new Error(err.detail || 'Upload failed')
   }
   const data = await res.json()
-  // Store only the relative path — not the full URL
-  return data.url   // e.g. "/static/uploads/abc123.jpg"
+  return data.url
 }
 
 export const get = (path, token) => request('GET', path, null, token)
