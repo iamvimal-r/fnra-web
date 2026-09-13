@@ -101,6 +101,7 @@ export default function FnraHousePlaque({ house, onClick, actions }) {
   const rawNum = house.house_number || '---'
   // Clean up prefix like "Fnra-104" -> "104" or "FNRA A-101" -> "A-101" since FNRA is already printed above
   const houseNum = rawNum.replace(/^fnra[-_\s]*/i, '').replace(/^house[-_\s]*/i, '') || rawNum
+  const houseName = house.house_name || ''
   const ownerName = house.owner_name || 'Resident'
   const blockName = house.block || 'Block C'
   const familyCount = Array.isArray(house.family_members) ? house.family_members.length : 0
@@ -203,7 +204,7 @@ export default function FnraHousePlaque({ house, onClick, actions }) {
           }}
         />
 
-        {/* Bottom Section: Owner Name + Block + Family Members */}
+        {/* Bottom Section: Owner Name + House Name + Block + Family Members */}
         <div>
           <div
             style={{
@@ -220,6 +221,25 @@ export default function FnraHousePlaque({ house, onClick, actions }) {
           >
             {ownerName}
           </div>
+
+          {houseName && (
+            <div
+              style={{
+                fontSize: 13,
+                fontWeight: 900,
+                color: '#3d1a08',
+                marginTop: 3,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+              }}
+            >
+              <span>🏡</span>
+              <span style={{ fontStyle: 'italic', textShadow: '0.5px 0.5px 0px rgba(255,255,255,0.4)' }}>
+                {houseName}
+              </span>
+            </div>
+          )}
 
           <div
             style={{

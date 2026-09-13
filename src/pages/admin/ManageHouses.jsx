@@ -6,6 +6,7 @@ const BLOCKS = ['Block A', 'Block B', 'Block C', 'Block D']
 
 const EMPTY_HOUSE = {
   house_number: '',
+  house_name: '',
   block: 'Block C',
   owner_name: '',
   status: 'Active',
@@ -68,6 +69,7 @@ export default function ManageHouses({ token }) {
     setEditing(h)
     setForm({
       house_number: h.house_number || '',
+      house_name: h.house_name || '',
       block: h.block || 'Block C',
       owner_name: h.owner_name || '',
       status: h.status || 'Active',
@@ -93,6 +95,7 @@ export default function ManageHouses({ token }) {
     try {
       const payload = {
         house_number: form.house_number.trim(),
+        house_name: form.house_name.trim(),
         block: form.block,
         owner_name: form.owner_name.trim(),
         status: form.status,
@@ -159,6 +162,7 @@ export default function ManageHouses({ token }) {
       const matchSearch =
         !q ||
         (h.house_number && h.house_number.toLowerCase().includes(q)) ||
+        (h.house_name && h.house_name.toLowerCase().includes(q)) ||
         (h.owner_name && h.owner_name.toLowerCase().includes(q)) ||
         (h.block && h.block.toLowerCase().includes(q)) ||
         (Array.isArray(h.family_members) && h.family_members.some(fm => (fm.name && fm.name.toLowerCase().includes(q)) || (fm.relation && fm.relation.toLowerCase().includes(q))))
@@ -488,6 +492,17 @@ export default function ManageHouses({ token }) {
                       ))}
                     </select>
                   </div>
+                </div>
+
+                <div>
+                  <label className="form-label" style={{ color: '#9ca3af', fontSize: 13 }}>House Name (വീട്ടുപേര് / Residence Name)</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="e.g. Devi Nandhanam (ദേവി നന്ദനം), Aadhi, Thiruvanam"
+                    value={form.house_name}
+                    onChange={(e) => setForm({ ...form, house_name: e.target.value })}
+                  />
                 </div>
 
                 <div>

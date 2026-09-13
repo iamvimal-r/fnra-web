@@ -733,6 +733,7 @@ function HousesSection({ houses }) {
       const q = search.toLowerCase().trim()
       const matchSearch = !q ||
         (h.house_number && h.house_number.toLowerCase().includes(q)) ||
+        (h.house_name && h.house_name.toLowerCase().includes(q)) ||
         (h.owner_name && h.owner_name.toLowerCase().includes(q)) ||
         (h.block && h.block.toLowerCase().includes(q)) ||
         (Array.isArray(h.family_members) && h.family_members.some(fm => (fm.name && fm.name.toLowerCase().includes(q)) || (fm.relation && fm.relation.toLowerCase().includes(q))))
