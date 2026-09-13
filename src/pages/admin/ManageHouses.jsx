@@ -45,7 +45,16 @@ export default function ManageHouses({ token }) {
   const loadHouses = async () => {
     setLoading(true)
     try {
-      const data = await housesApi.list(token)
+      let data
+      if (token) {
+        try {
+          data = await housesApi.list(token)
+        } catch (e) {
+          data = await housesApi.listPublic()
+        }
+      } else {
+        data = await housesApi.listPublic()
+      }
       setHouses(data || [])
     } catch (e) {
       console.error('Failed to load houses:', e)
@@ -110,7 +119,8 @@ export default function ManageHouses({ token }) {
       setShowModal(false)
       loadHouses()
     } catch (err) {
-      setError(err.message || 'Failed to save house.')
+      const msg = err.message || 'Failed to save house.'
+      setError(msg.includes('Not authenticated') ? 'Session expired or not authenticated. Please log in again.' : msg)
     } finally {
       setSaving(false)
     }
