@@ -111,5 +111,10 @@ export const housesApi = {
   update: (id, data, token) => put(`/houses/${id}`, data, token),
   delete: (id, token) => del(`/houses/${id}`, token),
   getMonthlyReport: (year, token) => get(`/houses/reports/monthly?year=${year}`, token),
+  getRentHistory: (houseId, token) => get(`/houses/${houseId}/rent`, token),
+  addRent: (houseId, data, token) => post(`/houses/${houseId}/rent`, data, token),
+  updateRent: (rentId, data, token) => put(`/houses/rent/${rentId}`, data, token),
+  deleteRent: (rentId, token) => del(`/houses/rent/${rentId}`, token),
+  getRentAuditLog: (token) => get('/houses/rent/tbk', token),
 }
 

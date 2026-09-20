@@ -38,9 +38,18 @@ export default function ManageHouses({ token }) {
   const [deletingId, setDeletingId] = useState(null)
   const [error, setError] = useState('')
 
-  // Family Member form sub-modal or inline
+// Family Member form sub-modal or inline
   const [newFamilyMember, setNewFamilyMember] = useState(EMPTY_MEMBER)
   const [showAddFamily, setShowAddFamily] = useState(false)
+
+  // Payment Modal State
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [paymentHouse, setPaymentHouse] = useState(null)
+  const [paymentHistory, setPaymentHistory] = useState([])
+  const [paymentYear, setPaymentYear] = useState(new Date().getFullYear())
+  const [loadingPayment, setLoadingPayment] = useState(false)
+  const [selectedMonths, setSelectedMonths] = useState([])
+  const [savingPayment, setSavingPayment] = useState(false)
 
   const loadHouses = async () => {
     setLoading(true)
@@ -156,6 +165,100 @@ export default function ManageHouses({ token }) {
       ...prev,
       family_members: prev.family_members.filter((_, i) => i !== index),
     }))
+  }
+
+  // Payment Module Handlers
+  const openPaymentModal = async (house) => {
+    setPaymentHouse(house)
+    setShowPaymentModal(true)
+    setSelectedMonths([])
+    await fetchHousePayments(house._id || house.id)
+  }
+
+  const fetchHousePayments = async (houseId) => {
+    setLoadingPayment(true)
+    try {
+      const history = await housesApi.getRentHistory(houseId, token)
+      setPaymentHistory(history || [])
+    } catch (err) {
+      console.error('Failed to fetch payment history:', err)
+      setPaymentHistory([])
+    } finally {
+      setLoadingPayment(false)
+    }
+  }
+
+  const handleToggleMonthPaid = async (month, currentStatus) => {
+    if (!paymentHouse) return
+    const houseId = paymentHouse._id || paymentHouse.id
+    setSavingPayment(true)
+    try {
+      const newStatus = currentStatus === 'Paid' ? 'Pending' : 'Paid'
+      await housesApi.addRent(houseId, {
+        month,
+        year: paymentYear,
+        amount: 50.0,
+        status: newStatus
+      }, token)
+      await fetchHousePayments(houseId)
+      loadHouses()
+    } catch (err) {
+      alert('Failed to update payment: ' + err.message)
+    } finally {
+      setSavingPayment(false)
+    }
+  }
+
+  const handleBulkCollectPayment = async () => {
+    if (!paymentHouse || selectedMonths.length === 0) return
+    const houseId = paymentHouse._id || paymentHouse.id
+    setSavingPayment(true)
+    try {
+      for (const month of selectedMonths) {
+        await housesApi.addRent(houseId, {
+          month,
+          year: paymentYear,
+          amount: 50.0,
+          status: 'Paid'
+        }, token)
+      }
+      setSelectedMonths([])
+      await fetchHousePayments(houseId)
+      loadHouses()
+    } catch (err) {
+      alert('Bulk payment error: ' + err.message)
+    } finally {
+      setSavingPayment(false)
+    }
+  }
+
+  const handleDeletePaymentRecord = async (rentId) => {
+    if (!window.confirm('Delete this payment transaction entry?')) return
+    try {
+      await housesApi.deleteRent(rentId, token)
+      if (paymentHouse) {
+        await fetchHousePayments(paymentHouse._id || paymentHouse.id)
+        loadHouses()
+      }
+    } catch (err) {
+      alert('Failed to delete payment record: ' + err.message)
+    }
+  }
+
+  const toggleSelectMonth = (month) => {
+    setSelectedMonths(prev => 
+      prev.includes(month) ? prev.filter(m => m !== month) : [...prev, month]
+    )
+  }
+
+  const selectAllUnpaid = () => {
+    const MONTHS_LIST = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+    const yearRecords = paymentHistory.filter(r => r.year === paymentYear)
+    const unpaid = MONTHS_LIST.filter(m => {
+      const rec = yearRecords.find(r => r.month === m)
+      return !rec || rec.status !== 'Paid'
+    })
+    setSelectedMonths(unpaid)
   }
 
   // Dynamic block list from houses data
@@ -348,6 +451,21 @@ export default function ManageHouses({ token }) {
                   actions={
                     <>
                       <button
+                        onClick={(e) => { e.stopPropagation(); openPaymentModal(h) }}
+                        style={{
+                          background: 'rgba(16, 185, 129, 0.2)',
+                          color: '#34d399',
+                          border: '1px solid #059669',
+                          borderRadius: 6,
+                          padding: '4px 10px',
+                          fontSize: 11,
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        💳 Payments
+                      </button>
+                      <button
                         onClick={(e) => { e.stopPropagation(); openEdit(h) }}
                         style={{
                           background: 'rgba(50, 24, 10, 0.85)',
@@ -440,6 +558,14 @@ export default function ManageHouses({ token }) {
                       </td>
                       <td style={{ padding: '14px 16px', textAlign: 'right' }}>
                         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                          <button
+                            onClick={() => openPaymentModal(h)}
+                            className="btn btn-sm"
+                            style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', border: '1px solid #059669', fontSize: 12, fontWeight: 700 }}
+                            title="Manage Monthly Payments"
+                          >
+                            💳 Payments
+                          </button>
                           <button
                             onClick={() => openEdit(h)}
                             className="btn btn-secondary btn-sm"
@@ -666,6 +792,279 @@ export default function ManageHouses({ token }) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* House Payment Module & List Popup Modal */}
+      {showPaymentModal && paymentHouse && (
+        <div className="modal-backdrop" onClick={() => setShowPaymentModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 760, maxHeight: '92vh', overflowY: 'auto' }}>
+            {/* Modal Header */}
+            <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 12 }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontSize: 16, fontWeight: 900, color: '#38bdf8', background: 'rgba(56,189,248,0.15)', padding: '2px 10px', borderRadius: 8, border: '1px solid rgba(56,189,248,0.3)' }}>
+                    #{paymentHouse.house_number}
+                  </span>
+                  <h3 style={{ margin: 0, fontSize: 18, color: '#fff' }}>
+                    {paymentHouse.owner_name} {paymentHouse.house_name ? `(${paymentHouse.house_name})` : ''}
+                  </h3>
+                </div>
+                <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 4 }}>
+                  📍 {paymentHouse.block} • Monthly Maintenance Fee: ₹50 / month
+                </div>
+              </div>
+
+              {/* Year Switcher */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#1f2937', padding: '4px 12px', borderRadius: 20, border: '1px solid #374151' }}>
+                <button
+                  type="button"
+                  onClick={() => setPaymentYear(y => y - 1)}
+                  style={{ background: 'none', border: 'none', color: '#38bdf8', fontSize: 14, cursor: 'pointer', fontWeight: 800 }}
+                >
+                  ◀
+                </button>
+                <span style={{ color: '#fbbf24', fontWeight: 900, fontSize: 15 }}>{paymentYear}</span>
+                <button
+                  type="button"
+                  onClick={() => setPaymentYear(y => y + 1)}
+                  style={{ background: 'none', border: 'none', color: '#38bdf8', fontSize: 14, cursor: 'pointer', fontWeight: 800 }}
+                >
+                  ▶
+                </button>
+              </div>
+
+              <button className="modal-close" onClick={() => setShowPaymentModal(false)}>✕</button>
+            </div>
+
+            <div className="modal-body" style={{ padding: '16px 0', display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {/* Financial Summary */}
+              {(() => {
+                const MONTHS_LIST = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+                const yearRecords = paymentHistory.filter(r => r.year === paymentYear)
+                const paidMonths = yearRecords.filter(r => r.status === 'Paid').map(r => r.month)
+                const paidCount = paidMonths.length
+                const paidAmount = paidCount * 50
+                const pendingCount = 12 - paidCount
+                const pendingAmount = pendingCount * 50
+
+                return (
+                  <div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+                      <div style={{ background: '#1f2937', padding: 12, borderRadius: 10, border: '1px solid rgba(255,255,255,0.08)', textAlign: 'center' }}>
+                        <div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>Total Annual Fee</div>
+                        <div style={{ fontSize: 20, fontWeight: 900, color: '#f3f4f6', marginTop: 2 }}>₹600</div>
+                        <div style={{ fontSize: 11, color: '#6b7280' }}>12 months × ₹50</div>
+                      </div>
+                      <div style={{ background: 'rgba(52,211,153,0.1)', padding: 12, borderRadius: 10, border: '1px solid rgba(52,211,153,0.3)', textAlign: 'center' }}>
+                        <div style={{ fontSize: 11, color: '#34d399', fontWeight: 600 }}>Collected Paid</div>
+                        <div style={{ fontSize: 20, fontWeight: 900, color: '#34d399', marginTop: 2 }}>₹{paidAmount}</div>
+                        <div style={{ fontSize: 11, color: '#a7f3d0' }}>{paidCount} / 12 Months</div>
+                      </div>
+                      <div style={{ background: 'rgba(248,113,113,0.1)', padding: 12, borderRadius: 10, border: '1px solid rgba(248,113,113,0.3)', textAlign: 'center' }}>
+                        <div style={{ fontSize: 11, color: '#f87171', fontWeight: 600 }}>Pending Dues</div>
+                        <div style={{ fontSize: 20, fontWeight: 900, color: '#f87171', marginTop: 2 }}>₹{pendingAmount}</div>
+                        <div style={{ fontSize: 11, color: '#fca5a5' }}>{pendingCount} Months Due</div>
+                      </div>
+                    </div>
+
+                    {/* Bulk Actions Header */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#1f2937', padding: '10px 14px', borderRadius: 10, border: '1px solid #374151', marginTop: 14 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <button
+                          type="button"
+                          onClick={selectAllUnpaid}
+                          style={{ background: '#374151', color: '#e5e7eb', border: '1px solid #4b5563', padding: '4px 10px', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+                        >
+                          Select All Unpaid ({pendingCount})
+                        </button>
+                        {selectedMonths.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => setSelectedMonths([])}
+                            style={{ background: 'none', border: 'none', color: '#9ca3af', fontSize: 12, cursor: 'pointer', textDecoration: 'underline' }}
+                          >
+                            Clear ({selectedMonths.length})
+                          </button>
+                        )}
+                      </div>
+
+                      {selectedMonths.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={handleBulkCollectPayment}
+                          disabled={savingPayment}
+                          style={{
+                            background: 'linear-gradient(135deg, #10b981, #059669)',
+                            color: '#ffffff',
+                            border: 'none',
+                            padding: '6px 14px',
+                            borderRadius: 8,
+                            fontSize: 13,
+                            fontWeight: 800,
+                            cursor: 'pointer',
+                            boxShadow: '0 4px 12px rgba(16,185,129,0.3)',
+                          }}
+                        >
+                          {savingPayment ? 'Processing...' : `✓ Collect Selected (${selectedMonths.length} Months • ₹${selectedMonths.length * 50})`}
+                        </button>
+                      )}
+                    </div>
+
+                    {/* 12 Months Grid */}
+                    <div style={{ marginTop: 14 }}>
+                      <div style={{ fontSize: 13, fontWeight: 800, color: '#e5e7eb', marginBottom: 10 }}>
+                        🗓️ {paymentYear} Monthly Fee Checklist (₹50/Month)
+                      </div>
+
+                      {loadingPayment ? (
+                        <div style={{ textAlign: 'center', padding: '30px 0', color: '#9ca3af' }}>
+                          Loading monthly payment records...
+                        </div>
+                      ) : (
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 10 }}>
+                          {MONTHS_LIST.map((m) => {
+                            const rec = yearRecords.find(r => r.month === m)
+                            const isPaid = rec && rec.status === 'Paid'
+                            const isSelected = selectedMonths.includes(m)
+
+                            return (
+                              <div
+                                key={m}
+                                style={{
+                                  background: isPaid ? 'rgba(52,211,153,0.08)' : isSelected ? 'rgba(56,189,248,0.12)' : '#1f2937',
+                                  border: `1px solid ${isPaid ? 'rgba(52,211,153,0.3)' : isSelected ? '#38bdf8' : 'rgba(255,255,255,0.08)'}`,
+                                  borderRadius: 10,
+                                  padding: 10,
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  justifyContent: 'space-between',
+                                  gap: 8,
+                                  transition: 'all 0.2s ease',
+                                }}
+                              >
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    {!isPaid && (
+                                      <input
+                                        type="checkbox"
+                                        checked={isSelected}
+                                        onChange={() => toggleSelectMonth(m)}
+                                        style={{ width: 16, height: 16, cursor: 'pointer', accentColor: '#38bdf8' }}
+                                      />
+                                    )}
+                                    <span style={{ fontWeight: 800, color: '#fff', fontSize: 13 }}>{m}</span>
+                                  </div>
+                                  <span style={{ fontSize: 12, fontWeight: 800, color: isPaid ? '#34d399' : '#f87171' }}>
+                                    ₹50
+                                  </span>
+                                </div>
+
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 6 }}>
+                                  <span
+                                    style={{
+                                      padding: '2px 8px',
+                                      borderRadius: 10,
+                                      fontSize: 10,
+                                      fontWeight: 800,
+                                      background: isPaid ? 'rgba(52,211,153,0.2)' : 'rgba(239,68,68,0.2)',
+                                      color: isPaid ? '#34d399' : '#f87171',
+                                    }}
+                                  >
+                                    {isPaid ? 'PAID' : 'PENDING'}
+                                  </span>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => handleToggleMonthPaid(m, isPaid ? 'Paid' : 'Pending')}
+                                    disabled={savingPayment}
+                                    style={{
+                                      background: isPaid ? 'rgba(239,68,68,0.15)' : 'rgba(16,185,129,0.2)',
+                                      color: isPaid ? '#f87171' : '#34d399',
+                                      border: `1px solid ${isPaid ? 'rgba(239,68,68,0.3)' : 'rgba(16,185,129,0.4)'}`,
+                                      borderRadius: 6,
+                                      padding: '3px 8px',
+                                      fontSize: 11,
+                                      fontWeight: 800,
+                                      cursor: 'pointer',
+                                    }}
+                                  >
+                                    {isPaid ? 'Mark Unpaid' : 'Mark Paid'}
+                                  </button>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Payment History Log */}
+                    <div style={{ marginTop: 20, borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 14 }}>
+                      <div style={{ fontSize: 13, fontWeight: 800, color: '#e5e7eb', marginBottom: 10 }}>
+                        📜 Payment Transactions History ({paymentHistory.length})
+                      </div>
+
+                      {paymentHistory.length === 0 ? (
+                        <div style={{ color: '#6b7280', fontSize: 12, fontStyle: 'italic' }}>
+                          No payment records found for this house yet.
+                        </div>
+                      ) : (
+                        <div style={{ overflowX: 'auto', maxHeight: 180, overflowY: 'auto' }}>
+                          <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
+                            <thead>
+                              <tr style={{ background: '#1f2937', color: '#9ca3af', textAlign: 'left' }}>
+                                <th style={{ padding: '6px 10px' }}>Month / Year</th>
+                                <th style={{ padding: '6px 10px' }}>Amount</th>
+                                <th style={{ padding: '6px 10px' }}>Status</th>
+                                <th style={{ padding: '6px 10px' }}>Date</th>
+                                <th style={{ padding: '6px 10px', textAlign: 'right' }}>Action</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {paymentHistory.map((item) => (
+                                <tr key={item._id || item.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                  <td style={{ padding: '6px 10px', fontWeight: 700, color: '#fff' }}>
+                                    {item.month} {item.year}
+                                  </td>
+                                  <td style={{ padding: '6px 10px', color: '#34d399', fontWeight: 700 }}>
+                                    ₹{item.amount}
+                                  </td>
+                                  <td style={{ padding: '6px 10px' }}>
+                                    <span style={{ color: item.status === 'Paid' ? '#34d399' : '#f87171', fontWeight: 700 }}>
+                                      {item.status}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: '6px 10px', color: '#9ca3af' }}>
+                                    {item.payment_date ? new Date(item.payment_date).toLocaleDateString() : '—'}
+                                  </td>
+                                  <td style={{ padding: '6px 10px', textAlign: 'right' }}>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeletePaymentRecord(item._id || item.id)}
+                                      style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: 12 }}
+                                      title="Delete payment entry"
+                                    >
+                                      🗑️
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })()}
+            </div>
+
+            <div className="modal-footer" style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 12 }}>
+              <button type="button" className="btn btn-secondary" onClick={() => setShowPaymentModal(false)}>
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

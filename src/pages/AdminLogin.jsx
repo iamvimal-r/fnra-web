@@ -51,11 +51,11 @@ export default function AdminLogin({ onLogin }) {
 
         <form onSubmit={handleSubmit} className="admin-form">
           <div className="form-group">
-            <label className="form-label">Email Address</label>
+            <label className="form-label">Email Address or Username</label>
             <input
               className="form-input"
-              type="email"
-              placeholder="admin@fnra.org"
+              type="text"
+              placeholder="admin@fnra.org or admin"
               value={email}
               onChange={e => setEmail(e.target.value)}
               autoComplete="username"
